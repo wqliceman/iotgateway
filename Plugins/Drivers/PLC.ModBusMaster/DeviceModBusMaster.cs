@@ -334,9 +334,30 @@ namespace PLC.ModBusMaster
                         var wordLen = GetModbusReadCount(0, ioArg.ValueType);
                         var rawBuffers = cacheBuffers.Skip(startIndex).Take(wordLen).ToArray();
 
-                        var retBuffers = ChangeBuffersOrder(rawBuffers, ioArg.EndianType);
+                        ushort[] retBuffers; // = ChangeBuffersOrder(rawBuffers, ioArg.EndianType);
+
                         if (ioArg.ValueType == DataTypeEnum.AsciiString)
-                            retBuffers = rawBuffers;
+                        {
+                            if (ioArg.EndianType != EndianEnum.None)
+                            {
+                                //Console.WriteLine("rawBuffers：" + Encoding.ASCII.GetString(GetBytes(rawBuffers).ToArray()));
+                                // 逐个元素处理字节序
+                                ushort[] processedBuffers = rawBuffers
+                                    .Select(x => ChangeBuffersOrder(new ushort[] { x }, ioArg.EndianType)[0])
+                                    .ToArray();
+
+                                //Console.WriteLine("retBuffers：" + Encoding.ASCII.GetString(GetBytes(processedBuffers).ToArray()));
+                                retBuffers = processedBuffers;
+                            }
+                            else
+                            {
+                                retBuffers = rawBuffers;
+                            }
+                        }
+                        else
+                        {
+                            retBuffers = ChangeBuffersOrder(rawBuffers, ioArg.EndianType);
+                        }
 
                         ret.StatusType = VaribaleStatusTypeEnum.Good;
                         if (ioArg.ValueType == DataTypeEnum.Uint16)
@@ -754,9 +775,30 @@ namespace PLC.ModBusMaster
                     else if (funCode == 4)
                         rawBuffers = _master.ReadInputRegisters(slaveAddress, startAddress, count);
 
-                    var retBuffers = ChangeBuffersOrder(rawBuffers, ioArg.EndianType);
+                    ushort[] retBuffers; // = ChangeBuffersOrder(rawBuffers, ioArg.EndianType);
+
                     if (ioArg.ValueType == DataTypeEnum.AsciiString)
-                        retBuffers = rawBuffers;
+                    {
+                        if (ioArg.EndianType != EndianEnum.None)
+                        {
+                            //Console.WriteLine("rawBuffers：" + Encoding.ASCII.GetString(GetBytes(rawBuffers).ToArray()));
+                            // 逐个元素处理字节序
+                            ushort[] processedBuffers = rawBuffers
+                                .Select(x => ChangeBuffersOrder(new ushort[] { x }, ioArg.EndianType)[0])
+                                .ToArray();
+
+                            //Console.WriteLine("retBuffers：" + Encoding.ASCII.GetString(GetBytes(processedBuffers).ToArray()));
+                            retBuffers = processedBuffers;
+                        }
+                        else
+                        {
+                            retBuffers = rawBuffers;
+                        }
+                    }
+                    else
+                    {
+                        retBuffers = ChangeBuffersOrder(rawBuffers, ioArg.EndianType);
+                    }
 
                     if (ioArg.ValueType == DataTypeEnum.Uint16)
                         ret.Value = retBuffers[0];
